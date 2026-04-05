@@ -1,0 +1,6 @@
+export(auto_report)
+export(check_data)
+export(detect_types)
+export(analyze_missing)
+export(compute_descriptive_stats)
+import(e1071)

@@ -1,0 +1,17 @@
+Package: autoreportr
+Type: Package
+Title: Automatic Statistical Reporting with Interactive Cards
+Version: 1.0.0
+Date: 2026-04-05
+Author: Stalec Alinkpesso
+Maintainer: Stalec Alinkpesso <<stalecalinkpesso9@gmail.com>
+Description: Generates an automatic HTML statistical report with 
+    interactive cards, univariate statistics, missing data analysis, 
+    and data quality indicators. The report includes hover effects,
+    tables, and interpretations for both numeric and categorical variables.
+License: MIT
+Depends: R (>= 3.5.0)
+Imports: e1071
+Encoding: UTF-8
+LazyData: false
+RoxygenNote: 7.2.3
