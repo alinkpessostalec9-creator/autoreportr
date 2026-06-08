@@ -1,14 +1,29 @@
 # ============================================
 # AUTOREPORTR - Reporting statistique automatique
-# Version 1.0 - Package R
+# Version 2.0 - Package R
 # Auteur : Stalec Alinkpesso
+# Description : Génération automatique de rapports d'analyse statistique
+#              avec interprétations par IA (version 2.0)
+# ============================================
+
+# 1. CHARGEMENT DES PACKAGES
+# ============================================
+if (!require("httr")) install.packages("httr")
+if (!require("jsonlite")) install.packages("jsonlite")
+if (!require("readxl")) install.packages("readxl")
+
+library(httr)
+library(jsonlite)
+library(readxl)
+
+# 2. CONFIGURATION API (MET TA CLE ICI)
+# ============================================
+api_key <- "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"  # ← REMPLACE PAR TA CLE
+
+# 3. FONCTIONS D'ANALYSE
 # ============================================
 
 #' Check data structure
-#'
-#' @param data A data.frame
-#' @return A list with data information
-#' @export
 check_data <- function(data) {
   list(
     n_obs        = nrow(data),
@@ -20,10 +35,6 @@ check_data <- function(data) {
 }
 
 #' Detect variable types
-#'
-#' @param data A data.frame
-#' @return A named list with variable types
-#' @export
 detect_types <- function(data) {
   types <- list()
   for (col in names(data)) {
@@ -44,10 +55,6 @@ detect_types <- function(data) {
 }
 
 #' Analyze missing values
-#'
-#' @param data A data.frame
-#' @return A list with missing data summary
-#' @export
 analyze_missing <- function(data) {
   missing_count <- sapply(data, function(x) sum(is.na(x)))
   missing_pct   <- missing_count / nrow(data) * 100
@@ -69,10 +76,6 @@ analyze_missing <- function(data) {
 }
 
 #' Compute descriptive statistics
-#'
-#' @param data A data.frame
-#' @return A list with statistics for each variable
-#' @export
 compute_descriptive_stats <- function(data) {
   results <- list()
   
@@ -143,10 +146,63 @@ compute_descriptive_stats <- function(data) {
   return(results)
 }
 
-#' Generate CSS for report
-#'
-#' @return Character string with CSS
-#' @keywords internal
+# 4. FONCTION D'INTERPRETATION
+# ============================================
+
+interpret_with_api <- function(var_name, stats) {
+  
+  if (stats$type == "numeric") {
+    prompt <- sprintf(
+      "Tu es un expert en statistique descriptive.
+      Interprete ces resultats pour la variable '%s' en francais (2-3 phrases):
+      
+      Effectif: %d
+      Moyenne: %.2f
+      Mediane: %.2f
+      Ecart-type: %.2f
+      Minimum: %.2f
+      Maximum: %.2f",
+      var_name, stats$n_complete, stats$mean, stats$median, stats$sd, stats$min, stats$max
+    )
+  } else {
+    top <- stats$all_categories[1, ]
+    prompt <- sprintf(
+      "Tu es un expert en statistique descriptive.
+      Interprete ces resultats pour la variable categorielle '%s' en francais (2-3 phrases):
+      
+      Categorie dominante: '%s' (%d observations, %.1f%%)
+      Nombre total de categories: %d",
+      var_name, top$Modalite, top$Effectif, top$Pourcentage, stats$n_levels
+    )
+  }
+  
+  response <- POST(
+    url = "https://api.groq.com/openai/v1/chat/completions",
+    add_headers(Authorization = paste("Bearer", api_key)),
+    content_type_json(),
+    encode = "json",
+    body = list(
+      model = "llama-3.3-70b-versatile",
+      messages = list(
+        list(role = "system", content = "Tu es un expert en statistique. Reponds en francais, court et clair."),
+        list(role = "user", content = prompt)
+      ),
+      temperature = 0.7,
+      max_tokens = 200
+    )
+  )
+  
+  if (status_code(response) != 200) {
+    return("")
+  }
+  
+  result <- content(response, "parsed")
+  return(result$choices[[1]]$message$content)
+}
+
+# 5. CSS
+# ============================================
+
 report_css <- function() {
   "
 <style>
@@ -187,6 +243,17 @@ report_css <- function() {
     font-size: 13px;
     color: #7f8c8d;
     margin-top: 12px;
+  }
+  
+  .version-badge {
+    display: inline-block;
+    background: #2980b9;
+    color: white;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: 10px;
+    vertical-align: middle;
   }
   
   h2 {
@@ -412,19 +479,12 @@ report_css <- function() {
 "
 }
 
-#' Generate HTML report
-#'
-#' @param data Data frame
-#' @param data_check Result from check_data()
-#' @param var_types Result from detect_types()
-#' @param missing_analysis Result from analyze_missing()
-#' @param descriptive_stats Result from compute_descriptive_stats()
-#' @param title Report title
-#' @param author Report author
-#' @return Filename of generated report
-#' @keywords internal
+# 6. GENERATION DU RAPPORT VERSION 2.0
+# ============================================
+
 generate_report <- function(data, data_check, var_types, missing_analysis,
                             descriptive_stats, title, author) {
+  
   timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
   filename  <- paste0("rapport_analyse_", timestamp, ".html")
   
@@ -433,9 +493,7 @@ generate_report <- function(data, data_check, var_types, missing_analysis,
   total_cells <- data_check$n_obs * data_check$n_vars
   missing_percent <- if(missing_analysis$total_missing > 0) {
     round(missing_analysis$total_missing / total_cells * 100, 1)
-  } else {
-    0
-  }
+  } else { 0 }
   
   completeness_rate <- 100 - missing_percent
   
@@ -450,17 +508,17 @@ generate_report <- function(data, data_check, var_types, missing_analysis,
     "<head>",
     "<meta charset='UTF-8'>",
     "<meta name='viewport' content='width=device-width, initial-scale=1.0'>",
-    paste0("<title>", title, "</title>"),
+    paste0("<title>", title, " - AutoReportR v2.0</title>"),
     report_css(),
     "</head>",
     "<body>",
     
     "<div class='header'>",
-    "<h1>", title, "</h1>",
+    "<h1>", title, "<span class='version-badge'>v2.0</span></h1>",
     "<div class='doc-meta'>",
     "Auteur : <strong>", author, "</strong> | ",
     "Date : <strong>", creation_date, "</strong> | ",
-    "AutoReportR v1.0",
+    "AutoReportR",
     "</div>",
     "</div>"
   )
@@ -498,7 +556,7 @@ generate_report <- function(data, data_check, var_types, missing_analysis,
             "<h2>2. Types de variables</h2>",
             "<div class='card'>",
             "<div class='overflow-x'>",
-            "<table>",
+            "</table>",
             "<thead>",
             "<tr><th>Type</th><th>Nombre</th><th>Variables</th></tr>",
             "</thead>",
@@ -572,14 +630,18 @@ generate_report <- function(data, data_check, var_types, missing_analysis,
   }
   
   # Section 4: Analyse univariée détaillée
-  html <- c(html,
-            "<h2>4. Analyse univariée détaillée</h2>"
-  )
+  html <- c(html, "<h2>4. Analyse univariée détaillée</h2>")
+  
+  cat("Génération des interprétations...\n")
   
   for (col in names(descriptive_stats)) {
     stat <- descriptive_stats[[col]]
     badge_cl <- if (stat$type == "numeric") "badge-num" else "badge-cat"
     badge_tx <- if (stat$type == "numeric") "NUMERIQUE" else "CATEGORIELLE"
+    
+    cat("  -> Traitement de :", col, "\n")
+    interpretation <- interpret_with_api(col, stat)
+    Sys.sleep(0.3)
     
     html <- c(html,
               "<h3>", col, " <span class='badge ", badge_cl, "'>", badge_tx, "</span></h3>",
@@ -603,19 +665,14 @@ generate_report <- function(data, data_check, var_types, missing_analysis,
                                " valeur(s) manquante(s) exclue(s) (", stat$missing_pct, "%).</div>"))
       }
       
-      cv <- stat$sd / abs(stat$mean) * 100
-      dispersion <- if (cv < 15) "faible" else if (cv < 30) "modérée" else "élevée"
-      
-      html <- c(html,
-                "<div class='interp'>",
-                "<div class='interp-title'>Interprétation</div>",
-                "<p><strong>", col, "</strong> présente une valeur moyenne de <strong>", 
-                round(stat$mean, 2), "</strong> avec une dispersion <strong>", dispersion, 
-                "</strong> (écart-type = ", round(stat$sd, 2), ").</p>",
-                "<p>Les valeurs s'étendent de <strong>", round(stat$min, 2), "</strong> à <strong>", 
-                round(stat$max, 2), "</strong>, avec une médiane de <strong>", round(stat$median, 2), "</strong>.</p>",
-                "</div>"
-      )
+      if (interpretation != "") {
+        html <- c(html,
+                  "<div class='interp'>",
+                  "<div class='interp-title'>Interprétation</div>",
+                  "<p>", interpretation, "</p>",
+                  "</div>"
+        )
+      }
       
     } else if (stat$type == "categorical" && stat$n_complete > 0) {
       all_cats <- stat$all_categories
@@ -661,27 +718,14 @@ generate_report <- function(data, data_check, var_types, missing_analysis,
                                " valeur(s) manquante(s) exclue(s) (", stat$missing_pct, "%).</div>"))
       }
       
-      html <- c(html,
-                "<div class='interp'>",
-                "<div class='interp-title'>Interprétation</div>"
-      )
-      
-      if (stat$n_exaequo > 1) {
-        mods <- paste(stat$modalites_exaequo$Modalite, collapse = " et ")
-        html <- c(html, paste0(
-          "<p>Les catégories <strong>", mods, "</strong> sont les plus fréquentes avec <strong>",
-          stat$max_effectif, "</strong> observations chacune (", 
-          stat$modalites_exaequo$Pourcentage[1], "% du total).</p>"
-        ))
-      } else {
-        top <- all_cats[1, ]
-        html <- c(html, paste0(
-          "<p>La catégorie <strong>", top$Modalite, "</strong> est la plus représentée avec <strong>",
-          top$Effectif, " observations</strong> (", top$Pourcentage, "% du total).</p>"
-        ))
+      if (interpretation != "") {
+        html <- c(html,
+                  "<div class='interp'>",
+                  "<div class='interp-title'>Interprétation</div>",
+                  "<p>", interpretation, "</p>",
+                  "</div>"
+        )
       }
-      
-      html <- c(html, "</div>")
     }
     
     html <- c(html, "</div>", "<hr>")
@@ -690,7 +734,7 @@ generate_report <- function(data, data_check, var_types, missing_analysis,
   # Footer
   html <- c(html,
             "<div class='footer'>",
-            "Rapport généré par AutoReportR v1.0 | ", creation_date,
+            "Rapport généré par AutoReportR v2.0 | ", creation_date,
             "</div>",
             "</body>",
             "</html>"
@@ -700,35 +744,34 @@ generate_report <- function(data, data_check, var_types, missing_analysis,
   return(filename)
 }
 
-#' AutoReportR: Generate Automatic Statistical Report
+# 7. FONCTION PRINCIPALE AUTO_REPORT
+# ============================================
+
+#' AutoReportR - Génération automatique de rapport statistique
 #'
-#' This function generates an automatic HTML statistical report with 
-#' interactive cards, univariate statistics, missing data analysis, 
-#' and data quality indicators.
+#' @description
+#' AutoReportR v2.0 génère un rapport d'analyse statistique complet au format HTML
+#' avec interprétations automatiques via l'API Groq (IA).
 #'
-#' @param data A data.frame containing the data to analyze
-#' @param vars Optional character vector of variable names to select
-#' @param title Optional title for the report
-#' @param author Author name (defaults to system username)
-#' @param open_report Logical, whether to open the report after generation
+#' @param data data.frame contenant les données à analyser
+#' @param vars vecteur optionnel des noms de variables à analyser (toutes par défaut)
+#' @param title titre personnalisé pour le rapport
+#' @param author nom de l'auteur (par défaut : utilisateur système)
+#' @param open_report ouverture automatique du rapport dans le navigateur
 #'
-#' @return Invisibly returns the path to the generated HTML file
+#' @return chemin du fichier HTML généré (invisible)
 #'
 #' @examples
 #' \dontrun{
-#' # Basic usage
 #' auto_report(mtcars)
-#'
-#' # With custom title and variable selection
-#' auto_report(mtcars, vars = c("mpg", "cyl", "hp"), 
-#'             title = "Analyse des performances auto")
+#' auto_report(iris, vars = c("Sepal.Length", "Species"), title = "Analyse Iris")
 #' }
 #'
 #' @export
 auto_report <- function(data,
-                        vars        = NULL,
-                        title       = NULL,
-                        author      = Sys.getenv("USERNAME"),
+                        vars = NULL,
+                        title = NULL,
+                        author = Sys.getenv("USERNAME"),
                         open_report = TRUE) {
   
   if (!is.data.frame(data)) stop("L'argument 'data' doit être un data.frame.")
@@ -747,7 +790,7 @@ auto_report <- function(data,
   
   sep <- paste(rep("=", 60), collapse = "")
   cat("\n", sep, "\n")
-  cat("  AutoReportR — Génération du rapport\n")
+  cat("  AutoReportR v2.0 — Génération du rapport\n")
   cat(sep, "\n\n")
   
   cat("[1/4] Vérification des données...\n")
@@ -755,7 +798,7 @@ auto_report <- function(data,
   cat("     ->", data_check$n_obs, "observations,", data_check$n_vars, "variables\n")
   
   cat("[2/4] Détection des types...\n")
-  var_types    <- detect_types(data)
+  var_types <- detect_types(data)
   type_summary <- table(unlist(var_types))
   for (t in names(type_summary))
     cat("     ->", type_summary[t], "variable(s) de type :", t, "\n")
@@ -767,7 +810,7 @@ auto_report <- function(data,
   else
     cat("     ->", missing_analysis$total_missing, "valeurs manquantes détectées\n")
   
-  cat("[4/4] Calcul des statistiques univariées...\n")
+  cat("[4/4] Calcul des statistiques et interprétations...\n")
   descriptive_stats <- compute_descriptive_stats(data)
   cat("     ->", length(descriptive_stats), "variable(s) analysée(s)\n")
   
@@ -786,3 +829,7 @@ auto_report <- function(data,
   
   return(invisible(report_file))
 }
+
+# Message de bienvenue
+cat("\n✓ AutoReportR v2.0 chargé avec succès\n")
+cat("  Utilisez auto_report(vos_donnees) pour générer votre rapport\n\n")
