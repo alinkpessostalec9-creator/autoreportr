@@ -1,17 +1,23 @@
 Package: autoreportr
 Type: Package
-Title: Automatic Statistical Reporting with Interactive Cards
-Version: 1.0.0
-Date: 2026-04-05
+Title: AutoReportR: Automatic Statistical Reporting with AI Interpretations
+Version: 2.0.0
+Date: 2026-06-08
 Author: Stalec Alinkpesso
-Maintainer: Stalec Alinkpesso <<stalecalinkpesso9@gmail.com>
-Description: Generates an automatic HTML statistical report with 
-    interactive cards, univariate statistics, missing data analysis, 
-    and data quality indicators. The report includes hover effects,
-    tables, and interpretations for both numeric and categorical variables.
+Maintainer: Stalec Alinkpesso <stalecalinkpesso9@gmail.com>
+Description: AutoReportR v2.0 generates professional HTML statistical reports 
+    with automatic descriptive statistics and AI-powered interpretations. 
+    The package analyzes numeric and categorical variables, detects missing 
+    values, and produces interactive, responsive reports. Key features include:
+    automatic variable typing, univariate statistics (mean, median, sd, 
+    quartiles, frequencies), missing data analysis, and intelligent 
+    interpretations via Groq API (Llama 3.3-70B).
 License: MIT
 Depends: R (>= 3.5.0)
-Imports: e1071
+Imports: 
+    httr,
+    jsonlite,
+    readxl
 Encoding: UTF-8
 LazyData: false
 RoxygenNote: 7.2.3
