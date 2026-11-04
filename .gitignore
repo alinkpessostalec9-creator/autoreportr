@@ -1,0 +1,9 @@
+.Rhistory
+.RData
+.Renviron
+.Rproj.user
+.ipynb_checkpoints/
+rapports_test/
+rapport_analyse_*
+*.Rcheck/
+*.tar.gz

@@ -1,0 +1,8 @@
+^scripts$
+^guide$
+^rapports_test$
+^README\.md$
+^\.git$
+^\.gitignore$
+^.*\.Rproj$
+^\.Rproj\.user$

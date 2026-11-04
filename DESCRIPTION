@@ -1,23 +1,39 @@
 Package: autoreportr
 Type: Package
-Title: AutoReportR: Automatic Statistical Reporting with AI Interpretations
-Version: 2.0.0
-Date: 2026-06-08
-Author: Stalec Alinkpesso
-Maintainer: Stalec Alinkpesso <stalecalinkpesso9@gmail.com>
-Description: AutoReportR v2.0 generates professional HTML statistical reports 
-    with automatic descriptive statistics and AI-powered interpretations. 
-    The package analyzes numeric and categorical variables, detects missing 
-    values, and produces interactive, responsive reports. Key features include:
-    automatic variable typing, univariate statistics (mean, median, sd, 
-    quartiles, frequencies), missing data analysis, and intelligent 
-    interpretations via Groq API (Llama 3.3-70B).
-License: MIT
-Depends: R (>= 3.5.0)
-Imports: 
+Title: Automatic Statistical Reporting with AI Interpretation
+Version: 3.0.0
+Date: 2026-11-04
+Authors@R: c(
+    person("Dona Ezechiel Stalec", "ALINKPESSO", role = c("aut", "cre"),
+           email = "alinkpessostalec9@gmail.com"),
+    person("Jules", "DAH SEGBE", role = "ctb", comment = "Collaborateur"))
+Description: Generates complete statistical reports in HTML, Word or PDF from
+    a data frame: data quality, identifier detection, missing values,
+    univariate and bivariate analysis, optional charts, automatic
+    interpretations and a final summary. Users may supply their own Groq API
+    key to obtain AI interpretations. A Shiny platform gives access to the
+    same features. Developed in partnership with CRISTAL and BUE-ENSPD,
+    Universite de Parakou.
+License: MIT + file LICENSE
+URL: https://github.com/alinkpessostalec9-creator/autoreportr
+BugReports: https://github.com/alinkpessostalec9-creator/autoreportr/issues
+Depends: R (>= 4.0.0)
+Imports:
+    base64enc,
+    e1071,
+    flextable,
+    grDevices,
+    graphics,
     httr,
     jsonlite,
-    readxl
+    officer,
+    readxl,
+    shiny,
+    stats,
+    tools,
+    utils
 Encoding: UTF-8
 LazyData: false
-RoxygenNote: 7.2.3
+Language: fr
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
